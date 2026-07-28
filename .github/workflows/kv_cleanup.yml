@@ -1,0 +1,23 @@
+name: KV Cache Cleanup
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger KV cleanup
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          KV_NS_ID: ${{ secrets.KV_NS_ID }}
+        run: |
+          echo "Triggering /api/cleanup..."
+          curl -s --max-time 60 "https://skmovies-premium.pages.dev/api/cleanup" || true
+          echo ""
+          echo "Direct KV cleanup..."
+          curl -s -X DELETE -H "Authorization: Bearer $CF_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/storage/kv/namespaces/$KV_NS_ID/bulk" \
+            -H "Content-Type: application/json" \
+            -d '{"keys":[]}' || true
